@@ -1,0 +1,98 @@
+---
+title: DATA606 Data Project Proposal
+author: "Omar Pineda"
+date: "3/28/2019" 
+---
+
+### Data Preparation
+
+```{r setup, echo=TRUE, results='hide', warning=FALSE, message=FALSE}
+# load data
+library(stringr)
+comm <- read.csv("hc.csv")
+#extract the community's state and assigns a region of the U.S. to each community
+comm$state <- openintro::state2abbr(str_extract(comm$Community, '\\b[^,]+$'))
+northeast <- c("CT","ME","MA","NH","RI","VT","NJ","NY","PA")
+midwest <- c("IL","IN","MI","OH","WI","IA","KS","MN","MO","NE","ND","SD")
+south <- c("DE","FL","GA","MD","NC","SC","VA","DC","WV","AL","KY","MS","TN","AR","LA","OK","TX")
+west <- c("AZ","CO","ID","MT","NV","NM","UT","WY","AK","HI","CA","OR","WA")
+comm$region[comm$state %in% northeast] <- "northeast"
+comm$region[comm$state %in% midwest] <- "midwest"
+comm$region[comm$state %in% south] <- "south"
+comm$region[comm$state %in% west] <- "west"
+```
+
+
+### Research question 
+
+**You should phrase your research question in a way that matches up with the scope of inference your dataset allows for.**
+
+Is there a significant relationship between a community's education score and population health score? In other words, does a community's population health outcomes (access to care, health behaviours, health conditions, mental health) improve with better education (achievement, infrastructure, participation) in the community? 
+
+Also, where are these healthiest communities clustered geographically? Is there a difference in the relationship between education and population health by region of the U.S.?
+
+### Cases 
+
+**What are the cases, and how many are there?**
+
+There are 500 cases and each stands for one of the top 500 "healthiest communities" in the United States. These rankings take into account several social determinants to assess a community's health.
+
+### Data collection 
+
+**Describe the method of data collection.**
+
+The data is provided by the source in the form of an .xlsx file. We unmerged some cells in MS Excel and saved it as a .csv file for the purpose of this analysis. 
+
+### Type of study 
+
+**What type of study is this (observational/experiment)?**
+
+This is an observational study as there is no treatment or control group.
+
+### Data Source 
+
+**If you collected the data, state self-collected. If not, provide a citation/link.**
+
+"THE HEALTHIEST Communities rankings from U.S. News & World Report show how nearly 3,000 U.S. counties and county equivalents perform in 81 metrics across 10 health and health-related categories."
+
+https://www.usnews.com/news/healthiest-communities/rankings
+https://www.usnews.com/media/healthiest-communities/2019/top-500-counties.xlsx
+
+
+### Dependent Variable
+
+**What is the response variable? Is it quantitative or qualitative?**
+
+The response variable is quantitative in the form of a population health score.
+
+### Independent Variable
+
+**You should have two independent variables, one quantitative and one qualitative.**
+
+One independent variable is the community's education score, which is quantitative. The other independent variable is the community's region in the U.S. which is qualitative.
+
+### Relevant summary statistics 
+
+**Provide summary statistics for each of the variables. Also include appropriate visualizations related to your research question (e.g. scatter plot, boxplots, etc). This step requires the use of R, hence a code chunk is provided below. Insert more code chunks as needed.**
+
+First we have some summary statistics for our Population Health score, Education score and region variables.
+
+```{r summ}
+summary(comm$Population.Health)
+summary(comm$Education)
+table(comm$region)
+```
+
+We also explore a scatterplot of Education scores versus Population Health scores. There appears to be a positive relationship here, and we will explore it, as well as the significance of this relationship, in the final project.
+
+```{r plot}
+plot(x= comm$Education, y = comm$Population.Health)
+```
+
+Finally, we explore the mean Population Health scores and Education scores for these communities by the regions in which they're in.
+
+```{r plots}
+library(ggplot2)
+ggplot(comm, aes(x=factor(region), y=Population.Health)) + stat_summary(fun.y="mean", geom="bar")
+ggplot(comm, aes(x=factor(region), y=Education)) + stat_summary(fun.y="mean", geom="bar")
+```

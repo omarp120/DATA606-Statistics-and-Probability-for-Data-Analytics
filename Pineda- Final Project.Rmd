@@ -1,0 +1,211 @@
+---
+title: Social Determinants of Health in the United States - Education and Population Health
+author: "Omar Pineda Jr."
+date: "5/15/2019" 
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    source_code: embed
+---
+
+Sidebar {.sidebar}
+-------------------------------------
+
+### Introduction
+
+The Social Determinants of Health (SDOH) are receiving increased attention on how they influence an individual's wellbeing. Factors such as Educaton, Housing and Community Vitality have been shown to be significant predictors for the overall health of community members.
+
+This project explores the relationship between the quality of Education in a community and its member's Population Health outcomes. Does a community's population health in terms of access to care, health behaviours, health conditions, and mental health improve with better educational achievement, infrastructure, and participation? We will also explore how this relationship differs by geographical region in the United States. 
+
+Assessing the influence of education on health in a community can help inform practices and policies concerning funding allocations in a society.
+
+Row {.tabset .tabset-fade}
+-------------------------------------
+
+### Social Determinants of Health
+
+![](SDOH.jpg)
+
+### Data
+
+Data collection: The data is provided by U.S. News as part of their "Healthiest Communities Rankings 2019" report in the form of an .xlsx file. We unmerged some cells in MS Excel and saved it as a .csv file for the purpose of this analysis. According to the source:
+
+"The Healthiest Communities rankings from U.S. News & World Report show how nearly 3,000 U.S. counties and county equivalents perform in 81 metrics across 10 health and health-related categories."
+
+https://www.usnews.com/news/healthiest-communities/rankings
+https://www.usnews.com/media/healthiest-communities/2019/top-500-counties.xlsx
+
+Cases: There are 500 cases and each stands for one of the top 500 "healthiest communities" in the United States. These rankings take into account several social determinant components, and give scores for each of them, to assess a community's health.
+
+Variables: The response variable is quantitative in the form of a population health score. One independent variable is the community's education score, which is quantitative. The other independent variable is the community's region in the U.S. which is qualitative.
+
+Type of study: This is an observational study as there is no treatment or control group. The rankings only assess the current state of these communities by social determinant component.
+
+Scope of inference - generalizability: Findings from this analysis can be generalized to all communities in the United States as communities from all regions have been sampled and ranked in this data set. The results may be more applicable to communities that are healthier as this data set is of the top 500 healthiest communities, but the relationship between education and population health should still hold for all communities. We will also consider how our model differs for communities in each U.S. region, and we can generalize these models to communities in the corresponding regions.
+
+Scope of inference - causality: We cannot use these data to establish causal links between education and population health as there can be confounding factors between these two variables. For example, the strength of the local economy can influence the qualiy of both the economy and population health of a community. Also, it may actually be that the relationship is instead the other way around: better population health may lead to better education.
+
+Below we see a sample of 15 of our communities after assigning them the region in the U.S. where they are located:
+
+```{r load}
+# load data
+library(stringr)
+comm <- read.csv("https://raw.githubusercontent.com/omarp120/DATA606FinalProject/master/hc.csv")
+#extract the community's state and assigns a region of the U.S. to each community
+comm$state <- openintro::state2abbr(str_extract(comm$Community, '\\b[^,]+$'))
+northeast <- c("CT","ME","MA","NH","RI","VT","NJ","NY","PA")
+midwest <- c("IL","IN","MI","OH","WI","IA","KS","MN","MO","NE","ND","SD")
+south <- c("DE","FL","GA","MD","NC","SC","VA","DC","WV","AL","KY","MS","TN","AR","LA","OK","TX")
+west <- c("AZ","CO","ID","MT","NV","NM","UT","WY","AK","HI","CA","OR","WA")
+comm$region[comm$state %in% northeast] <- "northeast"
+comm$region[comm$state %in% midwest] <- "midwest"
+comm$region[comm$state %in% south] <- "south"
+comm$region[comm$state %in% west] <- "west"
+head(comm[sample(nrow(comm), 15),])
+```
+
+### Exploratory data analysis
+
+First, we have some summary statistics for our Population Health score, Education score and region variables. Population Health scores for these communities tend to be higher than Education scores. Most communities are in the midwest, followed by the west.
+
+```{r summ}
+summary(comm$Population.Health)
+summary(comm$Education)
+table(comm$region)
+```
+
+A. We also explore the mean Population Health scores and Education scores for these communities by the regions in which they are in. Average Population Health scores are about the same for all regions while Education scores are the highest in the Northeast and in the South.
+
+B. A correlation network allows us to see the relationship between Education scores and other social determinant components. Components that are clustered together are highly correlated, and the correlation pairs are connected and color-coded by the strength of their correlation coefficients. Education correlates positively with Population Health and has the following correlation coefficient:
+
+```{r correlation}
+cor(comm$Population.Health, comm$Education)
+```
+
+C. We have created a scatterplot of Education scores versus Population Health scores. There appears to be a positive relationship between these two variables for all regions.
+
+D. Finally, we fit a linear regression model for our data. There is a statistically significant relationship between Education and Population Health for U.S. communities. We also produced models for communities in each U.S. region.
+
+### A. Scores by Region
+
+```{r plots}
+library(ggplot2)
+ggplot(comm, aes(x=factor(region), y=Population.Health)) + stat_summary(fun.y="mean", geom="bar", fill = "skyblue4") + theme_bw() + theme(panel.grid.major = element_blank(), panel.border = element_blank()) + ggtitle("Average Population Health Score by Region")
+
+ggplot(comm, aes(x=factor(region), y=Education)) + stat_summary(fun.y="mean", geom="bar", fill = "skyblue4") + theme_bw() + theme(panel.grid.major = element_blank(), panel.border = element_blank()) + ggtitle("Average Education Score by Region")
+```
+
+### B. Correlation Network
+
+```{r corNetwork}
+library(corrr)
+cor <- comm[,4:13]
+cor %>% correlate() %>% network_plot(min_cor = 0.0)
+```
+
+### C. Scatterplot
+
+```{r plot}
+qplot(Education, Population.Health, data = comm, colour = region) + theme_bw() + theme(panel.grid.major = element_blank(), panel.border = element_blank())
+```
+
+### D. Linear Regression Model Plot
+
+```{r reg2}
+plot(x=comm$Education, y=comm$Population.Health)
+m1 <- lm(Population.Health ~ Education, data = comm)
+abline(m1)
+```
+
+### D. Linear Regression Models Summary
+
+Linear model of Education versus Population Health scores for all communities:
+
+```{r reg}
+summary(m1)
+```
+
+As Education scores increase, Population Health scores also increase. For every 1-unit increase in Education score, the community's Population Health Score increases by .17. A community with an Education score of 0 would have a corresponding Population Health score of 66.24. Our Education variable explains 6.45% of the variability in our Population Health variable.
+
+Linear model of Education versus Population Health scores for communities by region:
+
+```{r regRegion}
+library(lme4)
+mRegion <- lmList(Population.Health ~ Education | region, data = comm)
+summary(mRegion)
+```
+
+The relationship between Education and Population Health scores is most significant in the South, and least significant in the Northeast. This association is strongest in the South, followed by the West, the Northeast and the Midwest.
+
+### Inference for Linear Model
+
+To assess whether the linear model is reliable, we need to check for (1) linearity, (2) constant variability, and (3) nearly normal residuals.
+
+(1) There does not appear to be a pattern in the residuals of the linear regression, so the relationship between Education and Population Health is linear.
+
+(2) Based on our scatter plot of the residuals, we appear to have constant variability.
+
+(3) The distribution of our model's residuals appears to be nearly normal, so this condition seems to be met.
+
+### Inference: (1) Linearity and (2) Constant Variability
+
+```{r residuals, eval=TRUE}
+plot(m1$residuals ~ comm$Education)
+abline(h = 0, lty = 3)  # adds a horizontal dashed line at y = 0
+```
+
+### Inference: (3) Nearly normal residuals
+
+```{r hist-res, eval=TRUE}
+hist(m1$residuals)
+```
+
+### ANOVA Hypothesis Test of Mean Education Scores by Region
+
+H_0: All regions means are equal.
+
+H_A: At least one region mean is different.
+
+With a p-value of p = 2e-16 < 0.05, we can reject the null hypothesis and conclude that there is a significant difference in the mean education scores of communities for at least one U.S. region.
+
+```{r ANOVA}
+reg.aov <- aov(Education ~ region, data=comm)
+summary(reg.aov)
+```
+
+### ANOVA Assumptions
+
+(a) Independence of cases: Education scores for each community are independent of one another.
+
+(b) Homogeneity of variance assumption: There appears to be no apparent relationship between residuals and fitted values, so we can assume the homogeneity of variances.
+
+(c) Normality assumption: We can assume normality as most of the points fall along the reference line.
+
+### ANOVA Assumptions: (b) Homogeneity
+
+```{r homogeneity}
+plot(reg.aov, 1)
+```
+
+### ANOVA Assumptions: (c) Normality 
+
+```{r normality}
+plot(reg.aov, 2)
+```
+
+```{r htRegion}
+#inference(y = comm$Education, x = comm$region, est = "mean", type = "ht", null = 0, 
+#          alternative = "greater", method = "theoretical")
+```
+
+### Conclusion
+
+We found that there is a significant difference in the education scores (quality of education) of communities in the U.S. by region. Out of the top 500 healthiest communities, communities in the West are most in need of improvements in their Education systems. Furthermore, we found that Education is a significant predictor for the quality of Population Health of a community, and this can be modeled by the following linear regression:
+
+\[
+  \hat{Population Health} = 66.24492 + 0.17115 * Education
+\]
+
+By looking at Education as a significant predictor for Population Health, we can consider alternative and innovative ways to improve the health of a community and allocate funds accordingly. As community members become more educated overall, they are more likely to make educated decisions about their health choices. Schools could also better integrate health education in their curriculums and incentivize healthy habits at a younger age in order to improve long term health outcomes.
+
+Further research can blend this dataset to U.S. census level data on the median income for these communities and see if there are significant relationships between income and any of the social determinants of health components. I would assume that all components would correlate positively with a community's level of income. We could also extend this project to look at all communities in the U.S., rather than just the top 500 'healthiest' communities as we focused on here.
